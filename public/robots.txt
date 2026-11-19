@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /admin
+Disallow: /editor
+Disallow: /profile
+Disallow: /password-reset
+Disallow: /request-password-reset

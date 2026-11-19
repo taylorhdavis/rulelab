@@ -1,0 +1,150 @@
+{
+  "version": "v1",
+  "baseUrl": "http://localhost:3001",
+  "authentication": {
+    "scheme": "bearer",
+    "placeholder": "Bearer rl_live_example_DO_NOT_USE"
+  },
+  "localEvaluatorDisclaimer": "Local test responses are RuleLab authoring aids and may not match Google SecOps exactly.",
+  "examples": [
+    {
+      "id": "compile-rule",
+      "method": "POST",
+      "path": "/api/v1/yaral/compile",
+      "requiredScopes": [
+        "yaral:compile"
+      ],
+      "request": {
+        "source": "rule api_example_login {\n  meta:\n    author = \"RuleLab\"\n  events:\n    $e.metadata.event_type = \"USER_LOGIN\"\n  condition:\n    $e\n}"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "id": "validate-rule",
+      "method": "POST",
+      "path": "/api/v1/yaral/validate",
+      "requiredScopes": [
+        "yaral:compile"
+      ],
+      "request": {
+        "source": "rule api_example_login {\n  events:\n    $e.metadata.event_type = \"USER_LOGIN\"\n  condition:\n    $e\n}"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "id": "format-rule",
+      "method": "POST",
+      "path": "/api/v1/yaral/format",
+      "requiredScopes": [
+        "yaral:compile"
+      ],
+      "request": {
+        "source": "rule api_example_login {\n  meta:\n    author = \"RuleLab\"\n  events:\n    $e.metadata.event_type = \"USER_LOGIN\"\n  condition:\n    $e\n}"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "id": "local-test-rule",
+      "method": "POST",
+      "path": "/api/v1/yaral/test",
+      "requiredScopes": [
+        "yaral:test"
+      ],
+      "request": {
+        "source": "rule api_example_missing_heartbeat {\n  meta:\n    author = \"RuleLab\"\n  events:\n    $e.metadata.event_type = \"STATUS_UPDATE\"\n    $host = $e.principal.hostname\n  match:\n    $host by 1h\n  outcome:\n    $event_count = count($e.metadata.id)\n    $missing_window_start = window_start\n  condition:\n    $event_count = 0 and window_start >= \"2026-01-01T01:00:00Z\"\n}",
+        "events": [
+          {
+            "metadata": {
+              "event_timestamp": "2026-01-01T00:10:00Z",
+              "event_type": "STATUS_UPDATE",
+              "id": "heartbeat-1"
+            },
+            "principal": {
+              "hostname": "host-a"
+            }
+          }
+        ],
+        "evaluationOptions": {
+          "evaluationRange": {
+            "start": "2026-01-01T00:00:00Z",
+            "end": "2026-01-01T02:00:00Z"
+          },
+          "matchKeyUniverse": {
+            "host": [
+              "host-a"
+            ]
+          }
+        },
+        "expectedResults": {
+          "rules": {
+            "api_example_missing_heartbeat": {
+              "matched": true
+            }
+          }
+        }
+      },
+      "expectedStatus": 200
+    },
+    {
+      "id": "list-saved-rules",
+      "method": "GET",
+      "path": "/api/v1/rules",
+      "requiredScopes": [
+        "rules:read"
+      ],
+      "expectedStatus": 200
+    },
+    {
+      "id": "create-saved-rule",
+      "method": "POST",
+      "path": "/api/v1/rules",
+      "requiredScopes": [
+        "rules:write"
+      ],
+      "request": {
+        "name": "api_example_login",
+        "description": "Example saved rule created through the RuleLab API.",
+        "folder": "Detection / Login",
+        "tags": [
+          "login",
+          "example"
+        ],
+        "source": "rule api_example_login {\n  meta:\n    author = \"RuleLab\"\n  events:\n    $e.metadata.event_type = \"USER_LOGIN\"\n  condition:\n    $e\n}"
+      },
+      "expectedStatus": 201
+    },
+    {
+      "id": "get-saved-rule",
+      "method": "GET",
+      "path": "/api/v1/rules/example-rule-id",
+      "requiredScopes": [
+        "rules:read"
+      ],
+      "expectedStatus": 200
+    },
+    {
+      "id": "update-saved-rule",
+      "method": "PUT",
+      "path": "/api/v1/rules/example-rule-id",
+      "requiredScopes": [
+        "rules:write"
+      ],
+      "request": {
+        "description": "Updated example description.",
+        "folder": "Detection / Updated",
+        "tags": "updated login",
+        "source": "rule api_example_existing {\n  meta:\n    author = \"RuleLab\"\n  events:\n    $e.metadata.event_type = \"USER_LOGIN\"\n  condition:\n    $e\n}"
+      },
+      "expectedStatus": 200
+    },
+    {
+      "id": "delete-saved-rule",
+      "method": "DELETE",
+      "path": "/api/v1/rules/example-rule-id",
+      "requiredScopes": [
+        "rules:write"
+      ],
+      "expectedStatus": 200
+    }
+  ]
+}

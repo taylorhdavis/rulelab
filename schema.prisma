@@ -1,0 +1,147 @@
+datasource db {
+  provider = "postgresql"
+  // Wasp requires that the url is set to the DATABASE_URL environment variable.
+  url      = env("DATABASE_URL")
+}
+
+// Wasp requires the `prisma-client-js` generator to be present.
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                     String        @id @default(uuid())
+  isAdmin                Boolean       @default(false)
+  createdAt              DateTime      @default(now())
+  savedRules             SavedRule[]
+  savedRuleVersions      SavedRuleVersion[]
+  udmEventSets           UdmEventSet[]
+  dataTables             DataTable[]
+  apiKeys                ApiKey[]
+  apiRateLimits          ApiRateLimit[]
+  preferences            UserPreference[]
+}
+
+model AppSetting {
+  key       String   @id
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserPreference {
+  id        String   @id @default(uuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  key       String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, key])
+  @@index([ownerId])
+}
+
+model SavedRule {
+  id          String   @id @default(uuid())
+  name        String
+  source      String
+  description String?
+  tags        String[] @default([])
+  folder      String?
+  eventSets   UdmEventSet[]
+  versions    SavedRuleVersion[]
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+model SavedRuleVersion {
+  id          String    @id @default(uuid())
+  savedRuleId String
+  savedRule   SavedRule @relation(fields: [savedRuleId], references: [id], onDelete: Cascade)
+  ownerId     String?
+  owner       User?     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  source      String
+  description String?
+  tags        String[]  @default([])
+  folder      String?
+  createdAt   DateTime  @default(now())
+
+  @@index([savedRuleId])
+  @@index([ownerId])
+}
+
+model UdmEventSet {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  events          Json
+  expectedResults Json?
+  savedRuleId     String?
+  savedRule       SavedRule? @relation(fields: [savedRuleId], references: [id], onDelete: Cascade)
+  ownerId         String?
+  owner           User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([savedRuleId])
+  @@index([ownerId])
+}
+
+model DataTable {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  rows        Json
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
+}
+
+model ApiKey {
+  id             String    @id @default(uuid())
+  ownerId        String
+  owner          User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  prefix         String    @unique
+  hash           String    @unique
+  scopes         Json
+  lastUsedAt     DateTime?
+  lastUsedIpHash String?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([ownerId])
+  @@index([prefix])
+  @@index([revokedAt])
+  @@index([expiresAt])
+}
+
+model ApiRateLimit {
+  id          String   @id @default(uuid())
+  bucket      String
+  key         String
+  ownerId     String?
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  count       Int      @default(0)
+  windowStart DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([bucket, key, windowStart])
+  @@index([ownerId])
+  @@index([bucket, key])
+}

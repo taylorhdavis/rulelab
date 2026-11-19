@@ -1,0 +1,24 @@
+{
+  "name": "RuleLab",
+  "short_name": "RuleLab",
+  "description": "YARA-L rule editor, validator, local test workspace, and authenticated API for detection engineers.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/brand/rulelab-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["developer", "productivity", "security"]
+}

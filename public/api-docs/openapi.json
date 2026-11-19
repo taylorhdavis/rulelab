@@ -1,0 +1,639 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "RuleLab API",
+    "version": "1.0.0",
+    "description": "RuleLab public API for YARA-L compilation, validation, formatting, local testing, and caller-owned rule management."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local API server; replace with your instance API origin"
+    },
+    {
+      "url": "http://localhost:3001",
+      "description": "Local API server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API key"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["ok", "error", "meta"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "invalid_request"
+              },
+              "message": {
+                "type": "string",
+                "example": "Invalid request."
+              },
+              "requestId": {
+                "type": "string",
+                "example": "f3de9a00-..."
+              }
+            },
+            "required": ["code", "message", "requestId"]
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "example": "f3de9a00-..."
+              }
+            }
+          }
+        }
+      },
+      "CompileRequest": {
+        "type": "object",
+        "required": ["source"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "example": "rule login_rule {\n  events:\n    $e.metadata.event_type = \"USER_LOGIN\"\n  condition:\n    $e\n}"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CompileResponse": {
+        "type": "object",
+        "required": ["ok", "data", "meta"],
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "diagnostics": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "parserMode": { "type": "string", "example": "rule" },
+              "rules": { "type": "array", "items": { "type": "object" } }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string", "example": "f3de9a00-..." },
+              "diagnosticProfile": { "type": "string", "example": "editor" }
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        }
+      },
+      "ValidateRequest": {
+        "$ref": "#/components/schemas/CompileRequest"
+      },
+      "ValidateResponse": {
+        "type": "object",
+        "required": ["ok", "data", "meta"],
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "diagnostics": { "type": "array", "items": { "type": "object" } },
+              "isValid": { "type": "boolean", "example": true },
+              "profile": { "type": "string", "example": "strict" },
+              "blockingDiagnosticCount": { "type": "number", "example": 0 }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string", "example": "f3de9a00-..." }
+            }
+          }
+        }
+      },
+      "FormatRequest": {
+        "$ref": "#/components/schemas/CompileRequest"
+      },
+      "FormatResponse": {
+        "type": "object",
+        "required": ["ok", "data", "meta"],
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "diagnostics": { "type": "array", "items": { "type": "object" } },
+              "source": { "type": "string" }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string", "example": "f3de9a00-..." }
+            }
+          }
+        }
+      },
+      "TestRequest": {
+        "type": "object",
+        "required": ["source", "events"],
+        "properties": {
+          "source": { "type": "string" },
+          "events": { "type": "array", "items": { "type": "object" } },
+          "dataTables": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "rows": { "type": "array", "items": { "type": ["object", "string", "number", "boolean"] } }
+              },
+              "required": ["name", "rows"]
+            }
+          },
+          "runMode": { "type": "string", "enum": ["first", "all", "target"] },
+          "targetRuleName": { "type": "string" },
+          "expectedResults": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "TestResponse": {
+        "type": "object",
+        "required": ["ok", "data", "meta"],
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "expected": { "type": ["object", "null"] },
+              "result": { "type": "object" }
+            },
+            "required": ["expected", "result"]
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string", "example": "f3de9a00-..." },
+              "evaluator": { "type": "string", "example": "rulelab-local" },
+              "officialRuntime": { "type": "boolean", "example": false }
+            },
+            "required": ["requestId", "evaluator", "officialRuntime"]
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        }
+      },
+      "RuleSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "folder": { "type": ["string", "null"] },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "source": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RuleListResponse": {
+        "type": "object",
+        "required": ["ok", "data", "meta"],
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "rules": { "type": "array", "items": { "$ref": "#/components/schemas/RuleSummary" } }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string", "example": "f3de9a00-..." }
+            }
+          }
+        }
+      },
+      "SingleRuleResponse": {
+        "type": "object",
+        "required": ["ok", "data", "meta"],
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "rule": { "$ref": "#/components/schemas/RuleSummary" }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string", "example": "f3de9a00-..." }
+            }
+          }
+        }
+      },
+      "CreateRuleRequest": {
+        "type": "object",
+        "required": ["name", "source"],
+        "properties": {
+          "name": { "type": "string" },
+          "source": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "folder": { "type": ["string", "null"] },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "UpdateRuleRequest": {
+        "$ref": "#/components/schemas/CreateRuleRequest"
+      },
+      "DeleteRuleResponse": {
+        "type": "object",
+        "required": ["ok", "data", "meta"],
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "deleted": { "type": "boolean", "example": true }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "requestId": { "type": "string", "example": "f3de9a00-..." }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "RuleId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid request payload",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Invalid or missing credentials",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "API disabled, scope mismatch, or feature blocked",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Rate or abuse limit exceeded",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds to wait before retrying",
+            "schema": { "type": "integer" }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
+        }
+      }
+    },
+    "examples": {
+      "compile-example": {
+        "summary": "Compile YARA-L sample",
+        "value": {
+          "source": "rule login_rule {\n  events:\n    $e.metadata.event_type = \"USER_LOGIN\"\n  condition:\n    $e\n}"
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/yaral/compile": {
+      "post": {
+        "summary": "Compile YARA-L",
+        "operationId": "compileYaralApi",
+        "tags": ["yaral"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompileRequest" },
+              "examples": { "compile": { "$ref": "#/components/examples/compile-example" } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compilation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CompileResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "413": { "$ref": "#/components/responses/BadRequest" },
+          "415": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/yaral/validate": {
+      "post": {
+        "summary": "Validate YARA-L",
+        "operationId": "validateYaralApi",
+        "tags": ["yaral"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ValidateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ValidateResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "415": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/yaral/format": {
+      "post": {
+        "summary": "Format YARA-L",
+        "operationId": "formatYaralApi",
+        "tags": ["yaral"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FormatRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Formatted source",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FormatResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "415": { "$ref": "#/components/responses/BadRequest" },
+          "422": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/yaral/test": {
+      "post": {
+        "summary": "Run local evaluator test",
+        "operationId": "testYaralApi",
+        "tags": ["yaral"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TestRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Local evaluation result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TestResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/BadRequest" },
+          "413": { "$ref": "#/components/responses/BadRequest" },
+          "415": { "$ref": "#/components/responses/BadRequest" },
+          "422": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "503": { "description": "Service temporarily unavailable" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/rules": {
+      "get": {
+        "summary": "List caller-owned rules",
+        "operationId": "listRulesApi",
+        "tags": ["rules"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Saved rules",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RuleListResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "summary": "Create a saved rule",
+        "operationId": "createRuleApi",
+        "tags": ["rules"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateRuleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created rule",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SingleRuleResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "description": "Validation or duplicate conflict" },
+          "413": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/rules/{id}": {
+      "parameters": [
+        { "$ref": "#/components/parameters/RuleId" }
+      ],
+      "get": {
+        "summary": "Get a saved rule",
+        "operationId": "getRuleApi",
+        "tags": ["rules"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Saved rule",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SingleRuleResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "put": {
+        "summary": "Replace a saved rule",
+        "operationId": "updateRuleApi",
+        "tags": ["rules"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateRuleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated rule",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SingleRuleResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "description": "Validation or conflict" },
+          "422": { "$ref": "#/components/responses/BadRequest" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a saved rule",
+        "operationId": "deleteRuleApi",
+        "tags": ["rules"],
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Deleted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DeleteRuleResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    }
+  }
+}

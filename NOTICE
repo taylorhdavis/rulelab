@@ -1,0 +1,15 @@
+RuleLab
+Copyright 2026 RuleLab contributors
+Licensed under the Apache License, Version 2.0.
+
+The application includes UDM field and enum data derived from the public
+Google SecOps UDM documentation:
+https://docs.cloud.google.com/chronicle/docs/reference/udm-field-list
+
+Google, Google SecOps, YARA-L, Chronicle, and other third-party names remain
+the property of their respective owners. The Apache License 2.0 does not
+grant trademark rights.
+
+RuleLab is an independent tool and is not affiliated with, endorsed by,
+sponsored by, or certified by Google. References to Google SecOps and YARA-L
+are for compatibility and informational purposes only.
